@@ -1,1 +1,1 @@
-CXXFLAGS = -std=c++2a -Ofast
+CXXFLAGS = -std=c++1z -Ofast
