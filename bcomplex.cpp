@@ -4,17 +4,18 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <filesystem>
 #include <cassert>
 #include <cmath>
 #include <algorithm>
 
 using namespace std;
 
+
+
 using space_t = std::vector<std::vector<float>>;
 using csv_t = std::unordered_map<int, space_t>;
 
-csv_t parse_cifar_csv(std::filesystem::path path) {
+csv_t parse_cifar_csv(std::string path) {
     auto result = csv_t{};
     auto csv_file = ifstream{path};
 
