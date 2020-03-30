@@ -92,10 +92,31 @@ vector<vector<float>> compute_inner(const space_t& space_a, const space_t& space
 void compute(space_t& space_a, space_t& space_b) {
     // assert(clsses.size() == 2); // TODO: multiple
 
-    auto outer = compute_outer(space_a, space_b);
+    auto outer = compute_outer(space_b, space_a);
     auto inner_a = compute_inner(space_a, space_b);
     auto inner_b = compute_inner(space_b, space_a);
 
+    int size = space_a.size() + space_b.size();
+    for (int i=0; i<size; i++) {
+        for (int j=0; j<i; j++) {
+            if (i < space_a.size()) {
+                // => j < i < space_a.size()
+                cout << inner_a[i][j];
+            } else {
+                if (j < space_a.size()) {
+                    cout << outer[i-space_a.size()][j];
+                } else {
+                    cout << inner_b[i-space_a.size()][j-space_b.size()];
+                }
+            }
+
+            if (j < i-1) {
+                cout << ",";
+            }
+        }
+        cout << endl;
+    }
+    
 }
 
 int main(int argc, char** argv) {
@@ -107,7 +128,6 @@ int main(int argc, char** argv) {
 
         auto spaces = parse_cifar_csv(args[0]);
         compute(spaces[clssa], spaces[clssb]);
-        // std::cout << spacess[clssa].size() << std::endl;
 
         return 0;
     }
