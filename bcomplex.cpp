@@ -15,6 +15,37 @@ using namespace std;
 using space_t = std::vector<std::vector<float>>;
 using csv_t = std::unordered_map<int, space_t>;
 
+template<typename T>
+bool bin_read(istream& is, T& out) {
+    return (bool) is.read(reinterpret_cast<char*>(&out), sizeof(T));
+}
+
+
+csv_t parse_cifar_bin(std::string path) {
+    auto result = csv_t{};
+
+    ifstream fs(path, ios::binary);
+
+    int dimension;
+    bin_read(fs, dimension);
+    // cout << dimension << endl;
+
+    int clss;
+    while (bin_read(fs, clss)) {
+        auto feat = vector<float>{};
+        feat.reserve(dimension);
+        float num;
+        for (int i = 0; i < dimension; ++i) {
+            bin_read(fs, num);
+            feat.push_back(num);
+        }
+        result[clss].emplace_back(move(feat));
+    }
+
+    return result;
+}
+
+
 csv_t parse_cifar_csv(std::string path) {
     auto result = csv_t{};
     auto csv_file = ifstream{path};
@@ -126,7 +157,7 @@ int main(int argc, char** argv) {
         int clssa = std::stoi(args[1]);
         int clssb = std::stoi(args[2]);
 
-        auto spaces = parse_cifar_csv(args[0]);
+        auto spaces = parse_cifar_bin(args[0]);
         compute(spaces[clssa], spaces[clssb]);
 
         return 0;
