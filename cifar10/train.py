@@ -32,7 +32,7 @@ def get_arguments():
         ['-e', '--epochs', int,   1000],
         [None, '--logdir', Path,  Path('out')],
         [None, '--gpu',    int,   -1],
-        [None, '--saveall'],
+        [None, '--saveall',int,   10],
     ]
 
 
@@ -162,13 +162,13 @@ def main(flags):
                 })
                 csvf.flush()
 
-                if flags.saveall:
+                if flags.saveall and epoch % 10 == 0:
                     torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
-                    continue
                 
                 if epoch >= 10 and valid_acc > best_acc:
                     prev = logdir / f'model_{token}_{trial}_{best_epoch}.pkl'
-                    if prev.exists(): prev.unlink()
+                    if prev.exists() and (not flags.saveall or best_epoch % 10 > 0):
+                        prev.unlink()
                     torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
                     best_acc, best_epoch = valid_acc, epoch
                 if epoch == flags.epochs:
