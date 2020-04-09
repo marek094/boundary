@@ -162,12 +162,12 @@ def main(flags):
                 })
                 csvf.flush()
 
-                if flags.saveall and epoch % 10 == 0:
+                if epoch % flags.saveall == 0:
                     torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
                 
                 if epoch >= 10 and valid_acc > best_acc:
                     prev = logdir / f'model_{token}_{trial}_{best_epoch}.pkl'
-                    if prev.exists() and (not flags.saveall or best_epoch % 10 > 0):
+                    if prev.exists() and best_epoch % flags.saveall > 0:
                         prev.unlink()
                     torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
                     best_acc, best_epoch = valid_acc, epoch
