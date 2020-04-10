@@ -33,6 +33,16 @@ def get_subsample_dataset_label_noise(trainset, subset, noise_size):
     return trainsubset
 
 
+def get_dataset_label_noise(trainset, noise_size):
+    ######## shuffle
+    train_size = len(trainset)
+    shuffle_targets_set = [copy.deepcopy(trainset.targets[idx]) for idx in range(train_size - noise_size, train_size)]    
+    shuffle(shuffle_targets_set)
+    for idx in range(train_size - noise_size, train_size):
+        trainset.targets[idx] = shuffle_targets_set[idx - train_size + noise_size]
+    return trainset
+    
+
 def save_feature_space(model, dataloader, path, cuda=True, verbose=True):
     import struct
     is_first = True

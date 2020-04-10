@@ -20,7 +20,7 @@ def get_hparams():
         ['-l', '--lrate',  float, 0.1],
         ['-L', '--ldecay', int,   1000],
         ['-n', '--width',  int,   10],
-        ['-s', '--noise',  int,   1500],
+        ['-s', '--noise',  int,   15],
         ['-o', '--optim',  str,   "adam"],
         ['-m', '--model',  str,   "resnet18"],
     ]
@@ -77,33 +77,35 @@ def train(model, trainloader, optimizer, criterion, flags):
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         if flags.gpu >= 0:
             inputs, targets = inputs.cuda(), targets.cuda()
-            targets = targets.cuda()
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item() * outputs.numel()
+
+        train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
+
     return train_loss / total, 100. * correct / total
 
 
-def valid(model, validloader, optimizer, criterion, flags):
+def valid(model, validloader, criterion, flags):
     model.eval()
     test_loss, correct, total = 0, 0, 0
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(validloader):
             if flags.gpu >= 0:
                 inputs, targets = inputs.cuda(), targets.cuda()
-                targets = targets.cuda()
             outputs = model(inputs)
             loss = criterion(outputs, targets)
-            test_loss += loss.item() * outputs.numel()
+
+            test_loss += loss.item()
             _, predicted = outputs.max(1)
-            correct += predicted.eq(targets).sum().item()
             total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
     return test_loss / total, 100. * correct / total
 
 
@@ -118,12 +120,11 @@ def main(flags):
     # dataset
     sets = datasets()
     trainset, validset = sets['train'], sets['valid']
-    # set up index after random permutation
-    permute_index = np.split(np.random.permutation(len(trainset)), flags.trials)
     validloader = torch.utils.data.DataLoader(validset, batch_size=100, shuffle=False)
 
     for trial in range(1, flags.trials+1):
-        trainsubset = get_subsample_dataset_label_noise(trainset, permute_index[trial-1], noise_size=flags.noise)
+        noise_size = len(trainset) * flags.noise // 100
+        trainsubset = get_dataset_label_noise(trainset, noise_size=noise_size)
         trainloader = torch.utils.data.DataLoader(trainsubset, batch_size=128, shuffle=True)
 
         # model & loss
@@ -153,7 +154,7 @@ def main(flags):
             logger.writeheader()
             for epoch in range(1, flags.epochs+1):
                 train_loss, train_acc = train(model, trainloader, optimizer, criterion, flags)
-                valid_loss, valid_acc = valid(model, validloader, optimizer, criterion, flags)
+                valid_loss, valid_acc = valid(model, validloader,            criterion, flags)
                 scheduler.step(epoch)
 
                 logger.writerow({'epoch': epoch, 
