@@ -142,7 +142,7 @@ def main(flags):
             optimizer = optim.Adam(model.parameters(), lr=flags.lrate, weight_decay=flags.wdecay)
             scheduler = StepLR(optimizer, step_size=flags.ldecay, gamma=0.1)
         elif flags.optim == 'sgd':
-            optimizer = optim.SGD(model.parameters(), lr=flags.lrate, momentum=0, weight_decay=flags.wdecay)
+            optimizer = optim.SGD(model.parameters(), lr=flags.lrate, momentum=0.9, weight_decay=flags.wdecay)
             trainset_size = 50_000
             lr_lambda = lambda epoch: flags.lrate / math.sqrt(1 + (epoch*trainset_size)//512)
             scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda, last_epoch=-1)
