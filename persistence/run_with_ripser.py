@@ -15,7 +15,7 @@ def main(flags):
         for _ in range(flags.threads):
             f = files[-1]; files.pop()
             bcomplex = f"./vcomplex {f} {flags.mode} "
-            ripser = f"./ripser/ripser --dim 5"
+            ripser = f"./ripser/ripser --dim {flags.dim}"
             of = out_path(f).open('w')
             p1 = subprocess.Popen(shlex.split(bcomplex), stdout=subprocess.PIPE)
             p2 = subprocess.Popen(shlex.split(ripser), stdin=p1.stdout, stdout=of)
