@@ -62,7 +62,8 @@ void compute(space_t& space) {
         for (int j=0; j<i; j++) {
             auto& [clss_b, feat_b] = space[j];
             if (clss_a == clss_b) {
-                cout << (+1.0/+0.0) << " ";
+                // cout << (+1.0/+0.0) << " ";
+                cout << (1e6*1.0) << " ";
             } else {
                 cout << dist(feat_a, feat_b) << " ";
             }
