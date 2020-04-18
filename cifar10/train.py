@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
-import time, csv, math
+import os, time, csv, math
 
 from torch.optim.lr_scheduler import StepLR, LambdaLR
 from pathlib import Path
@@ -114,7 +114,7 @@ def valid(model, validloader, criterion, flags):
 def main(flags):
     # directory
     token = settings_token(vars(flags))
-    timestamp = time.time()
+    timestamp = int(time.time())
     logdir = flags.logdir / token
     logdir.mkdir(exist_ok=True, parents=True)
 
@@ -159,8 +159,14 @@ def main(flags):
                 print(epoch, train_loss, train_acc, valid_loss, valid_acc, sep=',', file=csvf)
             
             if flags.spaces == 1 and (epoch == 1 or epoch % flags.saveall == 0):
-                save_space_binary(model, validloader, logdir / f'space_{token}_{trial}_{epoch}.dat')
-                continue
+                dat = logdir / f'space_{token}_{trial}_{epoch}.dat'
+                pers = logdir / f'space_{token}_{trial}_{epoch}.ph.txt'
+                save_space_binary(model, validloader, dat)
+                os.system(f'../persistence/vcomplex {dat} |' +
+                          f'../persistence/ripser/ripser --dim 5 --threshold 999000 ' + 
+                          f' > {pers}'
+                         )
+                dat.unlink()
 
             if epoch % flags.saveall == 0:
                 torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
