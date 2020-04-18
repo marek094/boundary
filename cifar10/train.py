@@ -11,6 +11,7 @@ from pathlib import Path
 from utils import *
 from model_resnet18k import make_resnet18k
 from model_mcnn import CNN
+from model2space import save_space_binary
 
 
 def get_hparams():
@@ -33,6 +34,7 @@ def get_arguments():
         [None, '--logdir', Path,  Path('out')],
         [None, '--gpu',    int,   -1],
         [None, '--saveall',int,   10],
+        [None, '--spaces', int,    0],
     ]
 
 
@@ -109,7 +111,6 @@ def valid(model, validloader, criterion, flags):
     return test_loss / total, 100. * correct / total
 
 
-
 def main(flags):
     # directory
     token = settings_token(vars(flags))
@@ -148,32 +149,30 @@ def main(flags):
             lr_lambda = lambda epoch: flags.lrate / math.sqrt(1 + (epoch*trainset_size)//512)
             scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda, last_epoch=-1)
 
-        with open(logdir / f'trainlog_{trial}_{timestamp}.csv', 'w') as csvf:
-            best_acc, best_epoch = 0, -1
-            logger = csv.DictWriter(csvf, fieldnames="epoch,train_loss,train_acc,valid_loss,valid_acc".split(','))
-            logger.writeheader()
-            for epoch in range(1, flags.epochs+1):
-                train_loss, train_acc = train(model, trainloader, optimizer, criterion, flags)
-                valid_loss, valid_acc = valid(model, validloader,            criterion, flags)
-                scheduler.step(epoch)
+        best_acc, best_epoch = 0, -1
+        for epoch in range(1, flags.epochs+1):
+            train_loss, train_acc = train(model, trainloader, optimizer, criterion, flags)
+            valid_loss, valid_acc = valid(model, validloader,            criterion, flags)
+            scheduler.step(epoch)
 
-                logger.writerow({'epoch': epoch, 
-                    'train_loss': train_loss, 'train_acc': train_acc, 
-                    'valid_loss': valid_loss, 'valid_acc': valid_acc,
-                })
-                csvf.flush()
+            with open(logdir / f'trainlog_{token}_{trial}_{epoch}_{timestamp}.csv', 'w') as csvf:
+                print(epoch, train_loss, train_acc, valid_loss, valid_acc, sep=',', file=csvf)
+            
+            if flags.spaces == 1:
+                save_space_binary(model, validloader, logdir / f'space_{token}_{trial}_{epoch}.dat')
+                continue
 
-                if epoch % flags.saveall == 0:
-                    torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
-                
-                if epoch >= 10 and valid_acc > best_acc:
-                    prev = logdir / f'model_{token}_{trial}_{best_epoch}.pkl'
-                    if prev.exists() and best_epoch % flags.saveall > 0:
-                        prev.unlink()
-                    torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
-                    best_acc, best_epoch = valid_acc, epoch
-                if epoch == flags.epochs:
-                    torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
+            if epoch % flags.saveall == 0:
+                torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
+            
+            if epoch >= 10 and valid_acc > best_acc:
+                prev = logdir / f'model_{token}_{trial}_{best_epoch}.pkl'
+                if prev.exists() and best_epoch % flags.saveall > 0:
+                    prev.unlink()
+                torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
+                best_acc, best_epoch = valid_acc, epoch
+            if epoch == flags.epochs:
+                torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
 
 
 
