@@ -34,7 +34,7 @@ def get_arguments():
         [None, '--logdir', Path,  Path('out')],
         [None, '--gpu',    int,   -1],
         [None, '--saveall',int,   10],
-        [None, '--spaces', int,    0],
+        [None, '--pers',   int,   -1],
     ]
 
 
@@ -158,12 +158,12 @@ def main(flags):
             with open(logdir / f'trainlog_{token}_{trial}_{epoch}_{timestamp}.csv', 'w') as csvf:
                 print(epoch, train_loss, train_acc, valid_loss, valid_acc, sep=',', file=csvf)
             
-            if flags.spaces == 1 and (epoch == 1 or epoch % flags.saveall == 0):
+            if flags.pers >= 0 and (epoch == 1 or epoch % flags.saveall == 0):
                 dat = logdir / f'space_{token}_{trial}_{epoch}.dat'
                 pers = logdir / f'space_{token}_{trial}_{epoch}.ph.txt'
                 save_space_binary(model, validloader, dat)
                 os.system(f'../persistence/vcomplex {dat} |' +
-                          f'../persistence/ripser/ripser --dim 5 --threshold 999000 ' + 
+                          f'../persistence/ripser/ripser --dim {flags.pers} --threshold 999000 ' + 
                           f' > {pers}'
                          )
                 dat.unlink()
