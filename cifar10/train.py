@@ -8,6 +8,7 @@ import os, time, csv, math
 from torch.optim.lr_scheduler import StepLR, LambdaLR
 from pathlib import Path
 
+from utils import *
 from model_resnet18k import make_resnet18k
 from model_mcnn import CNN
 import model2space as m2s
