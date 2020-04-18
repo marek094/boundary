@@ -158,7 +158,7 @@ def main(flags):
             with open(logdir / f'trainlog_{token}_{trial}_{epoch}_{timestamp}.csv', 'w') as csvf:
                 print(epoch, train_loss, train_acc, valid_loss, valid_acc, sep=',', file=csvf)
             
-            if flags.spaces == 1:
+            if flags.spaces == 1 and (epoch % flags.saveall == 0):
                 save_space_binary(model, validloader, logdir / f'space_{token}_{trial}_{epoch}.dat')
                 continue
 
