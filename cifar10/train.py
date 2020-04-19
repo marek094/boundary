@@ -37,6 +37,27 @@ def get_arguments():
     ]
 
 
+def save_feature_space(model, dataloader, path, cuda=True, verbose=True):
+    import struct
+    is_first = True
+    with path.open('wb') as f:
+        for batch_idx, (inputs, targets) in enumerate(dataloader):
+            if cuda:
+                inputs, targets = inputs.cuda(), targets.cuda()
+            feat_batch = model._features(inputs)
+            for clss, feat in zip(targets, feat_batch):
+                feat = feat.tolist()
+                if is_first:
+                    f.write(struct.pack('<i', len(feat)))
+                    is_first = False
+                f.write(struct.pack('<i', clss.tolist()))
+                f.write(struct.pack(f'<{len(feat)}f', *feat))
+            if verbose:
+                print(f'Batch {batch_idx} saved.', end='\r')
+    if verbose:
+        print("Test epoch saved" + "--- " * 12)
+
+
 def build_parser():
     import argparse
     parser = argparse.ArgumentParser()
@@ -160,7 +181,7 @@ def main(flags):
             if flags.pers >= 0 and (epoch == 1 or epoch % flags.saveall == 0):
                 dat = logdir / f'space_{token}_{trial}_{epoch}.dat'
                 # pers = logdir / f'space_{token}_{trial}_{epoch}.ph.txt'
-                save_space_binary(model, validloader, dat)
+                save_feature_space(model, validloader, dat, cuda=(flags.gpu>=0))
                 # os.system(f'../persistence/vcomplex {dat} |' +
                 #           f'../persistence/ripser/ripser --dim {flags.pers} --threshold 999000 ' + 
                 #           f' > {pers}'
