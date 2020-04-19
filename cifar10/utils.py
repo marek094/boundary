@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn.init as init
 from random import shuffle
 import copy
+import struct
 
 
 def one_hot(x, K):
@@ -43,14 +44,34 @@ def get_dataset_label_noise(trainset, noise_size):
     return trainset
     
 
-def save_feature_space(model, dataloader, path, cuda=True, verbose=True):
-    import struct
+# def save_feature_space(model, dataloader, path, cuda=True, verbose=True):
+#     import struct
+#     is_first = True
+#     with path.open('wb') as f:
+#         for batch_idx, (inputs, targets) in enumerate(dataloader):
+#             if cuda:
+#                 inputs, targets = inputs.cuda(), targets.cuda()
+#             feat_batch = model.to_feature_space(inputs)
+#             for clss, feat in zip(targets, feat_batch):
+#                 feat = feat.tolist()
+#                 if is_first:
+#                     f.write(struct.pack('<i', len(feat)))
+#                     is_first = False
+#                 f.write(struct.pack('<i', clss.tolist()))
+#                 f.write(struct.pack(f'<{len(feat)}f', *feat))
+#             if verbose:
+#                 print(f'Batch {batch_idx} saved.', end='\r')
+#     if verbose:
+#         print("Test epoch saved" + "--- " * 12)
+
+def save_space_binary(model, dataloader, path, path_eval=None, verbose=True):
+    model.eval()
     is_first = True
+    criterion = torch.nn.CrossEntropyLoss()
+    test_loss, correct, total = 0, 0, 0
     with path.open('wb') as f:
-        for batch_idx, (inputs, targets) in enumerate(dataloader):
-            if cuda:
-                inputs, targets = inputs.cuda(), targets.cuda()
-            feat_batch = model.to_feature_space(inputs)
+        for batch, (inputs, targets) in enumerate(dataloader):
+            feat_batch = model._features(inputs)
             for clss, feat in zip(targets, feat_batch):
                 feat = feat.tolist()
                 if is_first:
@@ -58,7 +79,22 @@ def save_feature_space(model, dataloader, path, cuda=True, verbose=True):
                     is_first = False
                 f.write(struct.pack('<i', clss.tolist()))
                 f.write(struct.pack(f'<{len(feat)}f', *feat))
+
+            outputs = model.fc(feat_batch)
+            loss = criterion(outputs, targets)
+
+            test_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
             if verbose:
-                print(f'Batch {batch_idx} saved.', end='\r')
+                print(f'Batch {batch} saved.', end='\r')
+
+    valid_loss, valid_acc = test_loss / total, 100. * correct / total
+    if path_eval is not None:
+        with path_eval[1].open('w') as fcsv:
+            epoch = path_eval[0]
+            print(epoch, valid_loss, valid_acc, sep=',', file=fcsv)   
     if verbose:
         print("Test epoch saved" + "--- " * 12)
