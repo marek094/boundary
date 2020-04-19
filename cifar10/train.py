@@ -160,13 +160,13 @@ def main(flags):
             
             if flags.pers >= 0 and (epoch == 1 or epoch % flags.saveall == 0):
                 dat = logdir / f'space_{token}_{trial}_{epoch}.dat'
-                pers = logdir / f'space_{token}_{trial}_{epoch}.ph.txt'
+                # pers = logdir / f'space_{token}_{trial}_{epoch}.ph.txt'
                 m2s.save_space_binary(model, validloader, dat)
-                os.system(f'../persistence/vcomplex {dat} |' +
-                          f'../persistence/ripser/ripser --dim {flags.pers} --threshold 999000 ' + 
-                          f' > {pers}'
-                         )
-                dat.unlink()
+                # os.system(f'../persistence/vcomplex {dat} |' +
+                #           f'../persistence/ripser/ripser --dim {flags.pers} --threshold 999000 ' + 
+                #           f' > {pers}'
+                #          )
+                # dat.unlink()
 
             if epoch % flags.saveall == 0:
                 torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
