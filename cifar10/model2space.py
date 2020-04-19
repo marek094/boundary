@@ -14,9 +14,11 @@ def token_to_flags(token):
     return flags
 
 
-def save_space_binary(model, dataloader, path, verbose=True):
+def save_space_binary(model, dataloader, path, path_eval=None, verbose=True):
     model.eval()
     is_first = True
+    criterion = torch.nn.CrossEntropyLoss()
+    test_loss, correct, total = 0, 0, 0
     with path.open('wb') as f:
         for batch, (inputs, targets) in enumerate(dataloader):
             feat_batch = model._features(inputs)
@@ -27,8 +29,23 @@ def save_space_binary(model, dataloader, path, verbose=True):
                     is_first = False
                 f.write(struct.pack('<i', clss.tolist()))
                 f.write(struct.pack(f'<{len(feat)}f', *feat))
+
+            outputs = model.fc(feat_batch)
+            loss = criterion(outputs, targets)
+
+            test_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
             if verbose:
                 print(f'Batch {batch} saved.', end='\r')
+
+    valid_loss, valid_acc = test_loss / total, 100. * correct / total
+    if path_eval is not None:
+        with path_eval[1].open('w') as fcsv:
+            epoch = path_eval[0]
+            print(epoch, valid_loss, valid_acc, sep=',', file=fcsv)   
     if verbose:
         print("Test epoch saved" + "--- " * 12)
 
@@ -54,7 +71,8 @@ def main(args):
         model.load_state_dict(torch.load(model_path))
 
         result = args.output / f'space_{token}_{trial}_{epoch}.dat'
-        save_space_binary(model, validloader, result, verbose=args.verbose)
+        csv = args.output / f'valid_{token}_{trial}_{epoch}.csv'
+        save_space_binary(model, validloader, result, path_eval=(epoch, csv), verbose=args.verbose)
 
 
 
