@@ -208,5 +208,5 @@ if __name__ == "__main__":
     parser = build_parser()
     args = parser.parse_args()
     cuda = "" if args.gpu < 0 else args.gpu
-    os.environ['CUDA_VISIBLE_DEVICES'] = cuda
+    os.environ['CUDA_VISIBLE_DEVICES'] = f'{cuda}'
     main(args)
