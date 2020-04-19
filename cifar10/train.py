@@ -167,6 +167,7 @@ def main(flags):
                 #           f' > {pers}'
                 #          )
                 # dat.unlink()
+                continue
 
             if epoch % flags.saveall == 0:
                 torch.save(model.state_dict(), logdir / f'model_{token}_{trial}_{epoch}.pkl')
